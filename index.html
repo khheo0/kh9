@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JS Tetris - Single File</title>
+    <title>구망고의 테트리스</title>
     <style>
         /* CSS: 디자인 */
         body {
@@ -19,25 +19,32 @@
             overflow: hidden;
         }
 
+        h1 {
+            margin-bottom: 10px;
+            color: #ffde00;
+            text-shadow: 2px 2px #000;
+        }
+
         .game-container {
             text-align: center;
             background: #333;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            border: 2px solid #555;
         }
 
         canvas {
-            border: solid 2px #555;
+            border: solid 2px #fff;
             background-color: #000;
             display: block;
         }
 
         .score-board {
-            font-size: 24px;
+            font-size: 28px;
             margin-bottom: 10px;
             font-weight: bold;
-            color: #ffde00;
+            color: #00ffcc;
         }
 
         .controls-info {
@@ -50,6 +57,8 @@
 </head>
 <body>
 
+    <h1>구망고의 테트리스</h1>
+
     <div class="game-container">
         <div class="score-board">SCORE: <span id="score">0</span></div>
         <canvas id="tetris" width="240" height="400"></canvas>
@@ -60,7 +69,6 @@
     </div>
 
     <script>
-        /* JS: 게임 로직 */
         const canvas = document.getElementById('tetris');
         const context = canvas.getContext('2d');
         const scoreElement = document.getElementById('score');
@@ -82,14 +90,12 @@
             if (type === 'T') return [[0, 7, 0], [7, 7, 7], [0, 0, 0]];
         }
 
-        // 2. 게임 판(Arena) 생성
         function createMatrix(w, h) {
             const matrix = [];
             while (h--) { matrix.push(new Array(w).fill(0)); }
             return matrix;
         }
 
-        // 3. 충돌 감지
         function collide(arena, player) {
             const [m, o] = [player.matrix, player.pos];
             for (let y = 0; y < m.length; ++y) {
@@ -102,7 +108,6 @@
             return false;
         }
 
-        // 4. 그리기 로직
         function draw() {
             context.fillStyle = '#000';
             context.fillRect(0, 0, canvas.width, canvas.height);
@@ -116,7 +121,6 @@
                     if (value !== 0) {
                         context.fillStyle = colors[value];
                         context.fillRect(x + offset.x, y + offset.y, 1, 1);
-                        // 블록 테두리 효과
                         context.lineWidth = 0.05;
                         context.strokeStyle = 'white';
                         context.strokeRect(x + offset.x, y + offset.y, 1, 1);
@@ -125,7 +129,6 @@
             });
         }
 
-        // 5. 게임 기능 로직
         function merge(arena, player) {
             player.matrix.forEach((row, y) => {
                 row.forEach((value, x) => {
@@ -146,8 +149,9 @@
             else matrix.reverse();
         }
 
+        // 줄 삭제 시 점수 합산 로직 (개선됨)
         function arenaSweep() {
-            let rowCount = 1;
+            let rowCount = 0;
             outer: for (let y = arena.length - 1; y > 0; --y) {
                 for (let x = 0; x < arena[y].length; ++x) {
                     if (arena[y][x] === 0) continue outer;
@@ -155,10 +159,13 @@
                 const row = arena.splice(y, 1)[0].fill(0);
                 arena.unshift(row);
                 ++y;
-                player.score += rowCount * 10;
-                rowCount *= 2;
+                rowCount++;
             }
-            updateScore();
+            if (rowCount > 0) {
+                // 줄을 지울 때마다 100점 x 지운 줄 수 보너스
+                player.score += rowCount * 100;
+                updateScore();
+            }
         }
 
         function playerDrop() {
@@ -166,8 +173,8 @@
             if (collide(arena, player)) {
                 player.pos.y--;
                 merge(arena, player);
+                arenaSweep(); // 줄이 지워지는지 확인하고 점수 추가
                 playerReset();
-                arenaSweep();
             }
             dropCounter = 0;
         }
@@ -185,7 +192,8 @@
             player.pos.y = 0;
             player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
             if (collide(arena, player)) {
-                arena.forEach(row => row.fill(0)); // 게임 오버 시 초기화
+                alert("게임 오버! 최종 점수: " + player.score);
+                arena.forEach(row => row.fill(0));
                 player.score = 0;
                 updateScore();
             }
@@ -210,7 +218,6 @@
             scoreElement.innerText = player.score;
         }
 
-        // 6. 실행 및 루프
         let dropCounter = 0;
         let dropInterval = 1000;
         let lastTime = 0;
@@ -233,13 +240,12 @@
             score: 0,
         };
 
-        // 키 컨트롤
         document.addEventListener('keydown', event => {
-            if (event.keyCode === 37) playerMove(-1);        // Left
-            else if (event.keyCode === 39) playerMove(1);   // Right
-            else if (event.keyCode === 40) playerDrop();    // Down
-            else if (event.keyCode === 38) playerRotate(1); // Up (Rotate)
-            else if (event.keyCode === 32) {                // Space (Hard Drop)
+            if (event.keyCode === 37) playerMove(-1);
+            else if (event.keyCode === 39) playerMove(1);
+            else if (event.keyCode === 40) playerDrop();
+            else if (event.keyCode === 38) playerRotate(1);
+            else if (event.keyCode === 32) {
                 while(!collide(arena, player)) { player.pos.y++; }
                 player.pos.y--;
                 playerDrop();
