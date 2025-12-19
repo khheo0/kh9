@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>구망고의 테트리스</title>
+    <title>구망고의 공룡 테트리스</title>
     <style>
-        /* CSS: 디자인 */
         body {
-            background: #202028;
+            background-color: #2c3e50;
+            /* 공룡 느낌의 초록/황토색 그라데이션 */
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
             color: #fff;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
@@ -19,52 +20,115 @@
             overflow: hidden;
         }
 
+        /* 공룡 배경 느낌을 위한 장식 요소 */
+        body::before {
+            content: "🦖";
+            position: absolute;
+            font-size: 150px;
+            opacity: 0.1;
+            bottom: 10px;
+            right: 10px;
+            z-index: -1;
+        }
+
         h1 {
-            margin-bottom: 10px;
-            color: #ffde00;
-            text-shadow: 2px 2px #000;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 3rem;
+            color: #2ecc71; /* 공룡 초록색 */
+            text-shadow: 4px 4px 0px #000;
+            letter-spacing: 2px;
+        }
+
+        .main-wrapper {
+            display: flex;
+            align-items: flex-start;
+            gap: 30px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            border: 5px solid #2ecc71;
         }
 
         .game-container {
-            text-align: center;
-            background: #333;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-            border: 2px solid #555;
+            position: relative;
         }
 
         canvas {
-            border: solid 2px #fff;
-            background-color: #000;
+            /* 화면을 크게 키우기 위해 보일 크기 조절 */
+            width: 400px; 
+            height: 666px;
+            border: 4px solid #fff;
+            background-color: rgba(0, 0, 0, 0.9);
             display: block;
         }
 
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 180px;
+        }
+
         .score-board {
-            font-size: 28px;
+            background: #222;
+            padding: 20px;
+            border-radius: 15px;
+            border: 3px solid #f1c40f;
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 18px;
+            color: #f1c40f;
             margin-bottom: 10px;
+            display: block;
+        }
+
+        .score-value {
+            font-size: 48px;
             font-weight: bold;
-            color: #00ffcc;
+            color: #fff;
+            text-shadow: 0 0 10px #f1c40f;
         }
 
         .controls-info {
-            margin-top: 15px;
-            color: #ccc;
-            font-size: 13px;
-            line-height: 1.6;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #eee;
+        }
+
+        .controls-info b {
+            color: #2ecc71;
         }
     </style>
 </head>
 <body>
 
-    <h1>구망고의 테트리스</h1>
+    <h1>🦖 구망고의 테트리스</h1>
 
-    <div class="game-container">
-        <div class="score-board">SCORE: <span id="score">0</span></div>
-        <canvas id="tetris" width="240" height="400"></canvas>
-        <div class="controls-info">
-            ← → : 이동 | ↑ : 회전 | ↓ : 빨리 내리기<br>
-            <b>Space</b> : 즉시 내리기 (Hard Drop)
+    <div class="main-wrapper">
+        <div class="game-container">
+            <canvas id="tetris" width="240" height="400"></canvas>
+        </div>
+
+        <div class="side-panel">
+            <div class="score-board">
+                <span class="score-label">TOTAL SCORE</span>
+                <div id="score" class="score-value">0</div>
+            </div>
+
+            <div class="controls-info">
+                🕹 <b>조작 방법</b><br>
+                ← → : 이동<br>
+                ↑ : 블록 회전<br>
+                ↓ : 빨리 내리기<br>
+                <b>Space</b> : 하드 드롭
+            </div>
         </div>
     </div>
 
@@ -73,11 +137,18 @@
         const context = canvas.getContext('2d');
         const scoreElement = document.getElementById('score');
 
+        // 블록 한 칸의 크기 (20px * 20px)
         context.scale(20, 20);
 
-        // 1. 블록 설정 및 색상
         const colors = [
-            null, '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#3877FF',
+            null, 
+            '#FF0D72', // T
+            '#0DC2FF', // I
+            '#0DFF72', // S
+            '#F538FF', // Z
+            '#FF8E0D', // L
+            '#FFE138', // O
+            '#3877FF', // J
         ];
 
         function createPiece(type) {
@@ -119,10 +190,13 @@
             matrix.forEach((row, y) => {
                 row.forEach((value, x) => {
                     if (value !== 0) {
+                        // 블록 색상 채우기
                         context.fillStyle = colors[value];
                         context.fillRect(x + offset.x, y + offset.y, 1, 1);
+                        
+                        // 블록 테두리 (더 선명하게)
                         context.lineWidth = 0.05;
-                        context.strokeStyle = 'white';
+                        context.strokeStyle = '#fff';
                         context.strokeRect(x + offset.x, y + offset.y, 1, 1);
                     }
                 });
@@ -149,7 +223,6 @@
             else matrix.reverse();
         }
 
-        // 줄 삭제 시 점수 합산 로직 (개선됨)
         function arenaSweep() {
             let rowCount = 0;
             outer: for (let y = arena.length - 1; y > 0; --y) {
@@ -162,8 +235,8 @@
                 rowCount++;
             }
             if (rowCount > 0) {
-                // 줄을 지울 때마다 100점 x 지운 줄 수 보너스
-                player.score += rowCount * 100;
+                // 점수 가중치 부여 (많이 지울수록 보너스)
+                player.score += rowCount * 100 * rowCount;
                 updateScore();
             }
         }
@@ -173,7 +246,7 @@
             if (collide(arena, player)) {
                 player.pos.y--;
                 merge(arena, player);
-                arenaSweep(); // 줄이 지워지는지 확인하고 점수 추가
+                arenaSweep();
                 playerReset();
             }
             dropCounter = 0;
@@ -192,7 +265,7 @@
             player.pos.y = 0;
             player.pos.x = (arena[0].length / 2 | 0) - (player.matrix[0].length / 2 | 0);
             if (collide(arena, player)) {
-                alert("게임 오버! 최종 점수: " + player.score);
+                alert("🦖 크와앙! 게임 오버!\n최종 점수: " + player.score);
                 arena.forEach(row => row.fill(0));
                 player.score = 0;
                 updateScore();
